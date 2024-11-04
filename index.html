@@ -27,13 +27,18 @@
 
     function preload() {
       // Load the background image
-      bgImage = loadImage('Cat.JPG');
+      bgImage = loadImage('Cat.JPG', img => {
+        console.log("Image loaded successfully.");
+      }, err => {
+        console.error("Failed to load image. Check the file path.");
+      });
     }
 
     function setup() {
       createCanvas(1000, 1000);
       textAlign(CENTER, CENTER);
       textSize(24);
+      noLoop();
 
       // Define interaction zones for each cat
       zones = [
@@ -41,37 +46,52 @@
         { name: 'Cat2', x: 300, y: 700, w: 100, h: 100, found: false },
         { name: 'Cat3', x: 500, y: 600, w: 100, h: 100, found: false }
       ];
+      loop(); // Start the draw loop after setup
     }
 
     function draw() {
       // Draw the background image
-      background(bgImage);
+      if (bgImage) {
+        background(bgImage);
+      } else {
+        console.error("Background image not loaded.");
+      }
 
-      // Display the score
+      // Display the score at the top
       fill(255);
       textSize(32);
       text(`Cats Found: ${catsFound} / ${totalCats}`, width / 2, 40);
 
-      // Check if the game is over
+      // If the game is over, display the end screen
       if (gameEnded) {
         displayEndScreen();
+        noLoop(); // Stop the draw loop after the game ends
       }
     }
 
     function mousePressed() {
-      if (gameEnded) return; // If game is over, ignore clicks
+      if (gameEnded) return; // If game is over, ignore further clicks
 
       // Check if mouse is in any cat's zone
+      let foundAny = false;
       zones.forEach(zone => {
         if (!zone.found && mouseX > zone.x && mouseX < zone.x + zone.w &&
             mouseY > zone.y && mouseY < zone.y + zone.h) {
           zone.found = true;
           catsFound += 1;
+          foundAny = true;
+          console.log(`You found ${zone.name}!`);
+          
+          // Check if all cats have been found
           if (catsFound === totalCats) {
             gameEnded = true;
           }
         }
       });
+
+      if (foundAny) {
+        redraw(); // Redraw to update the score immediately
+      }
     }
 
     function displayEndScreen() {
