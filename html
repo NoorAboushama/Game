@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Simple P5.js Game with Background</title>
+  <style>
+    /* Center the canvas */
+    body, html {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      background-color: #222;
+    }
+  </style>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+</head>
+<body>
+  <script>
+    let bgImage;
+
+    function preload() {
+      // Load the background image
+      bgImage = loadImage('Cats.webp');
+    }
+
+    function setup() {
+      createCanvas(1000, 1000);
+      canvas = createCanvas(1000, 1000);
+      canvas.parent('canvas-container');
+    }
+
+    function draw() {
+      // Draw the background image
+      background(bgImage);
+
+      // Draw a red circle following the mouse as an interactive element
+      fill(255, 0, 0);
+      noStroke();
+      ellipse(mouseX, mouseY, 50, 50);
+    }
+  </script>
+</body>
+</html>
