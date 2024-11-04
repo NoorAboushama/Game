@@ -12,6 +12,7 @@
       align-items: center;
       height: 100vh;
       margin: 0;
+      overflow: hidden;
       background-color: #222;
     }
   </style>
@@ -21,10 +22,10 @@
   <script>
     let bgImage;
     let catsFound = 0;
-    const totalCats = 3; // Total number of cats to find
+    const totalCats = 7; // Total number of cats in the image
     let zones = [];
     let gameEnded = false;
-
+    
     function preload() {
       // Load the background image
       bgImage = loadImage('Cat.JPG', img => {
@@ -35,24 +36,27 @@
     }
 
     function setup() {
-      createCanvas(1000, 1000);
+      createCanvas(windowWidth, windowHeight);
       textAlign(CENTER, CENTER);
       textSize(24);
-      noLoop();
-
-      // Define interaction zones for each cat
+      
+      // Define interaction zones for each cat (based on approximate positions)
+      // Adjust these coordinates if necessary for accuracy
       zones = [
-        { name: 'Cat1', x: 200, y: 600, w: 100, h: 100, found: false },
-        { name: 'Cat2', x: 300, y: 700, w: 100, h: 100, found: false },
-        { name: 'Cat3', x: 500, y: 600, w: 100, h: 100, found: false }
+        { name: 'Cat1', x: 0.2 * width, y: 0.6 * height, w: 0.1 * width, h: 0.1 * height, found: false },
+        { name: 'Cat2', x: 0.3 * width, y: 0.7 * height, w: 0.1 * width, h: 0.1 * height, found: false },
+        { name: 'Cat3', x: 0.5 * width, y: 0.6 * height, w: 0.1 * width, h: 0.1 * height, found: false },
+        { name: 'Cat4', x: 0.6 * width, y: 0.2 * height, w: 0.1 * width, h: 0.1 * height, found: false },
+        { name: 'Cat5', x: 0.75 * width, y: 0.4 * height, w: 0.1 * width, h: 0.1 * height, found: false },
+        { name: 'Cat6', x: 0.8 * width, y: 0.7 * height, w: 0.1 * width, h: 0.1 * height, found: false },
+        { name: 'Cat7', x: 0.9 * width, y: 0.8 * height, w: 0.1 * width, h: 0.1 * height, found: false }
       ];
-      loop(); // Start the draw loop after setup
     }
 
     function draw() {
-      // Draw the background image
+      // Draw the background image scaled to the window size
       if (bgImage) {
-        background(bgImage);
+        image(bgImage, 0, 0, width, height);
       } else {
         console.error("Background image not loaded.");
       }
@@ -103,6 +107,11 @@
       text('Congratulations!', width / 2, height / 2 - 20);
       textSize(32);
       text('You found all the cats!', width / 2, height / 2 + 40);
+    }
+
+    function windowResized() {
+      resizeCanvas(windowWidth, windowHeight); // Resize canvas if the window is resized
+      setup(); // Recalculate positions if window size changes
     }
   </script>
 </body>
