@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Simple P5.js Game with Background</title>
+  <title>Interactive Garden Game with Enhanced Display</title>
   <style>
     /* Center the canvas */
     body, html {
@@ -20,6 +20,7 @@
 <body>
   <script>
     let bgImage;
+    let hoveredZoneName = '';
 
     function preload() {
       // Load the background image
@@ -36,10 +37,62 @@
       // Draw the background image
       background(bgImage);
 
-      // Draw a red circle following the mouse as an interactive element
+      // Display the current mouse coordinates at the mouse position
+      displayCoordinates();
+
+      // Define interaction zones and check mouse position
+      checkMouseoverZones();
+
+      // Display the name of the hovered zone at the center of the screen
+      if (hoveredZoneName) {
+        displayZoneName();
+      }
+
+      // Draw a small red circle following the mouse as an indicator
       fill(255, 0, 0);
       noStroke();
-      ellipse(mouseX, mouseY, 50, 50);
+      ellipse(mouseX, mouseY, 10, 10);
+    }
+
+    function displayCoordinates() {
+      // Set text properties
+      fill(255);
+      textSize(24);
+      noStroke();
+
+      // Display mouse coordinates at the mouse position
+      text(`X: ${mouseX}, Y: ${mouseY}`, mouseX + 10, mouseY + 30);
+    }
+
+    function checkMouseoverZones() {
+      // Reset hoveredZoneName for each frame
+      hoveredZoneName = '';
+
+      // Example bounding box zones for each interactive element
+      let zones = [
+        { name: 'Cat1', x: 200, y: 600, w: 100, h: 100 },
+        { name: 'Cat2', x: 300, y: 700, w: 100, h: 100 },
+        { name: 'Cat3', x: 500, y: 600, w: 100, h: 100 },
+        { name: 'Flowers', x: 150, y: 400, w: 200, h: 200 },
+        { name: 'Trees', x: 700, y: 200, w: 100, h: 300 },
+        { name: 'Umbrella', x: 800, y: 300, w: 150, h: 150 },
+        { name: 'Steps', x: 350, y: 750, w: 300, h: 50 }
+      ];
+
+      // Loop through each zone and check for mouseover
+      zones.forEach(zone => {
+        if (mouseX > zone.x && mouseX < zone.x + zone.w &&
+            mouseY > zone.y && mouseY < zone.y + zone.h) {
+          hoveredZoneName = zone.name;
+        }
+      });
+    }
+
+    function displayZoneName() {
+      fill(255);
+      textSize(48);
+      textAlign(CENTER, CENTER);
+      text(hoveredZoneName, width / 2, height / 2);
     }
   </script>
 </body>
