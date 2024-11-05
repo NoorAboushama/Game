@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple Forest Game</title>
+    <title>Improved Forest Game</title>
     <style>
         body {
             margin: 0;
@@ -22,15 +22,25 @@
             color: white;
             font-family: Arial, sans-serif;
         }
+        #lives {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 24px;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
     </style>
 </head>
 <body>
     <div id="score">Score: 0</div>
+    <div id="lives">Lives: 3</div>
     <canvas id="gameCanvas"></canvas>
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const scoreElement = document.getElementById('score');
+        const livesElement = document.getElementById('lives');
 
         // Set canvas dimensions to match the window size
         canvas.width = window.innerWidth;
@@ -44,10 +54,14 @@
             height: 50, // Height of the player
             speed: 5, // Speed at which the player moves
             dx: 0, // Change in x position (movement direction)
-            dy: 0 // Change in y position
+            dy: 0, // Change in y position
+            gravity: 1, // Gravity affecting the player
+            jumpStrength: -15, // Strength of the jump
+            onGround: true // Check if the player is on the ground
         };
 
         let score = 0;
+        let lives = 3;
         let obstacles = [];
 
         // Function to create an obstacle
@@ -58,7 +72,7 @@
                 y: canvas.height - size - 100, // Position near the bottom
                 width: size,
                 height: size,
-                speed: 3 // Speed at which the obstacle moves to the left
+                speed: 3 + score / 100 // Speed increases as score increases
             };
             obstacles.push(obstacle);
         }
@@ -88,15 +102,23 @@
             drawPlayer(); // Draw the player in the new position
             drawObstacles(); // Draw all obstacles
 
-            // Update player's position based on movement direction
+            // Update player's position based on movement direction and gravity
             player.x += player.dx;
             player.y += player.dy;
+
+            // Apply gravity if player is not on the ground
+            if (!player.onGround) {
+                player.dy += player.gravity;
+            }
 
             // Prevent player from moving out of bounds
             if (player.x < 0) player.x = 0;
             if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
-            if (player.y < 0) player.y = 0;
-            if (player.y + player.height > canvas.height) player.y = canvas.height - player.height;
+            if (player.y + player.height > canvas.height) {
+                player.y = canvas.height - player.height;
+                player.dy = 0;
+                player.onGround = true;
+            }
 
             // Update score as player moves to the right
             if (player.dx > 0) {
@@ -122,9 +144,16 @@
                     player.y < obstacle.y + obstacle.height &&
                     player.y + player.height > obstacle.y
                 ) {
-                    // End the game if there is a collision
-                    if (confirm('Game Over! Your score: ' + score + '\nDo you want to start over?')) {
-                        resetGame();
+                    lives--;
+                    livesElement.textContent = `Lives: ${lives}`;
+                    if (lives <= 0) {
+                        // End the game if there are no lives left
+                        if (confirm('Game Over! Your score: ' + score + '\nDo you want to start over?')) {
+                            resetGame();
+                        }
+                    } else {
+                        // Remove the obstacle that caused the collision
+                        obstacles.splice(index, 1);
                     }
                 }
             });
@@ -143,7 +172,11 @@
                     player.dx = -player.speed;
                     break;
                 case 'ArrowUp':
-                    player.dy = -player.speed;
+                case ' ': // ArrowUp or Spacebar to jump
+                    if (player.onGround) {
+                        player.dy = player.jumpStrength;
+                        player.onGround = false;
+                    }
                     break;
                 case 'ArrowDown':
                     player.dy = player.speed;
@@ -158,7 +191,6 @@
                 case 'ArrowLeft':
                     player.dx = 0;
                     break;
-                case 'ArrowUp':
                 case 'ArrowDown':
                     player.dy = 0;
                     break;
@@ -180,7 +212,9 @@
             player.y = canvas.height - 150;
             player.dx = 0;
             player.dy = 0;
+            player.onGround = true;
             score = 0;
+            lives = 3;
             obstacles = [];
             update();
         }
@@ -190,3 +224,4 @@
     </script>
 </body>
 </html>
+
