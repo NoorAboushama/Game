@@ -239,7 +239,57 @@
                 case ' ': // ArrowUp or Spacebar to jump
                     if (player.onGround) {
                         player.dy = player.jumpStrength;
-                        player.onGround =
+                        player.onGround = false;
+                    }
+                    break;
+            }
+        }
+
+        // Function to stop the player's movement
+        function stopPlayer(e) {
+            switch (e.key) {
+                case 'ArrowRight':
+                    player.dx = 0;
+                    break;
+            }
+        }
+
+        // Event listener for keydown to handle player movement
+        document.addEventListener('keydown', movePlayer);
+
+        // Event listener for keyup to stop player movement
+        document.addEventListener('keyup', stopPlayer);
+
+        // Function to reset the game
+        function resetGame() {
+            player.x = 100;
+            player.y = canvas.height - 150;
+            player.dx = 0;
+            player.dy = 0;
+            player.onGround = true;
+            player.shielded = false;
+            score = 0;
+            lives = 3;
+            obstacles = [];
+            powerUps = [];
+            backgroundX = 0;
+            update();
+        }
+
+        // Ensure all images are loaded before starting the game
+        backgroundImage.onload = () => {
+            playerImage.onload = () => {
+                createObstacle();
+                createPowerUp();
+                setInterval(createObstacle, 2000); // Create a new obstacle every 2 seconds
+                setInterval(createPowerUp, 10000); // Create a new power-up every 10 seconds
+                update();
+            };
+        };
+    </script>
+</body>
+</html>
+
 
 
 
