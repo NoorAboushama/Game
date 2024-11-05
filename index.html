@@ -78,6 +78,7 @@
             const height = Math.random() * 30 + 50; // Random height between 50 and 80
             const obstacleImage = new Image();
             obstacleImage.src = 'obstacle.png'; // Use an image for the obstacle
+            obstacleImage.onerror = () => console.warn('Obstacle image failed to load');
             const obstacle = {
                 x: canvas.width, // Start at the right edge of the canvas
                 y: canvas.height - height - 100, // Position near the bottom
@@ -95,6 +96,7 @@
             const type = Math.random() < 0.5 ? 'shield' : 'speed'; // Randomly choose between shield or speed boost
             const powerUpImage = new Image();
             powerUpImage.src = type === 'shield' ? 'shield.png' : 'speed.png'; // Use different images for different power-ups
+            powerUpImage.onerror = () => console.warn('Power-up image failed to load');
             const powerUp = {
                 x: Math.random() * (canvas.width - size), // Random horizontal position
                 y: Math.random() * (canvas.height - size - 100), // Random vertical position
@@ -108,31 +110,39 @@
 
         // Function to draw the background
         function drawBackground() {
-            ctx.drawImage(backgroundImage, backgroundX, 0, canvas.width, canvas.height);
-            ctx.drawImage(backgroundImage, backgroundX + canvas.width, 0, canvas.width, canvas.height);
+            if (backgroundImage.complete) {
+                ctx.drawImage(backgroundImage, backgroundX, 0, canvas.width, canvas.height);
+                ctx.drawImage(backgroundImage, backgroundX + canvas.width, 0, canvas.width, canvas.height);
 
-            backgroundX -= backgroundSpeed;
-            if (backgroundX <= -canvas.width) {
-                backgroundX = 0;
+                backgroundX -= backgroundSpeed;
+                if (backgroundX <= -canvas.width) {
+                    backgroundX = 0;
+                }
             }
         }
 
         // Function to draw the player on the canvas
         function drawPlayer() {
-            ctx.drawImage(playerImage, player.x, player.y, player.width, player.height); // Draw the player as an image
+            if (playerImage.complete) {
+                ctx.drawImage(playerImage, player.x, player.y, player.width, player.height); // Draw the player as an image
+            }
         }
 
         // Function to draw obstacles
         function drawObstacles() {
             obstacles.forEach(obstacle => {
-                ctx.drawImage(obstacle.image, obstacle.x, obstacle.y, obstacle.width, obstacle.height); // Draw obstacle as an image
+                if (obstacle.image.complete) {
+                    ctx.drawImage(obstacle.image, obstacle.x, obstacle.y, obstacle.width, obstacle.height); // Draw obstacle as an image
+                }
             });
         }
 
         // Function to draw power-ups
         function drawPowerUps() {
             powerUps.forEach(powerUp => {
-                ctx.drawImage(powerUp.image, powerUp.x, powerUp.y, powerUp.width, powerUp.height); // Draw power-up as an image
+                if (powerUp.image.complete) {
+                    ctx.drawImage(powerUp.image, powerUp.x, powerUp.y, powerUp.width, powerUp.height); // Draw power-up as an image
+                }
             });
         }
 
@@ -279,6 +289,7 @@
         // Ensure all images are loaded before starting the game
         backgroundImage.onload = () => {
             playerImage.onload = () => {
+                console.log('All images loaded, starting the game.');
                 createObstacle();
                 createPowerUp();
                 setInterval(createObstacle, 2000); // Create a new obstacle every 2 seconds
@@ -286,9 +297,14 @@
                 update();
             };
         };
+
+        // Log errors if images fail to load
+        backgroundImage.onerror = () => console.error('Background image failed to load');
+        playerImage.onerror = () => console.error('Player image failed to load');
     </script>
 </body>
 </html>
+
 
 
 
