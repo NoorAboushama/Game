@@ -11,7 +11,7 @@
         }
         canvas {
             display: block;
-            background: url('forest.JPG') no-repeat center center;
+            background: url('forest.jpg') no-repeat center center;
             background-size: cover;
         }
         #score {
@@ -125,8 +125,9 @@
                     player.y + player.height > obstacle.y
                 ) {
                     // End the game if there is a collision
-                    alert('Game Over! Your score: ' + score);
-                    document.location.reload();
+                    if (confirm('Game Over! Your score: ' + score + '\nDo you want to start over?')) {
+                        resetGame();
+                    }
                 }
             });
 
@@ -174,6 +175,17 @@
 
         // Create obstacles at intervals
         setInterval(createObstacle, 2000); // Create a new obstacle every 2 seconds
+
+        // Function to reset the game
+        function resetGame() {
+            player.x = 100;
+            player.y = canvas.height - 150;
+            player.dx = 0;
+            player.dy = 0;
+            score = 0;
+            obstacles = [];
+            update();
+        }
 
         // Start the game update loop
         update();
