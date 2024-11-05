@@ -48,7 +48,7 @@
         const backgroundImage = new Image();
         backgroundImage.src = 'forest.JPG';
         let backgroundX = 0;
-        const backgroundSpeed = 2;
+        let backgroundSpeed = 2;
 
         // Player object representing the blue square
         let player = {
@@ -102,7 +102,9 @@
             ctx.drawImage(backgroundImage, backgroundX, 0, canvas.width, canvas.height);
             ctx.drawImage(backgroundImage, backgroundX + canvas.width, 0, canvas.width, canvas.height);
 
-            backgroundX -= backgroundSpeed;
+            if (player.dx > 0) {
+                backgroundX -= backgroundSpeed;
+            }
             if (backgroundX <= -canvas.width) {
                 backgroundX = 0;
             }
@@ -293,5 +295,6 @@
     </script>
 </body>
 </html>
+
 
 
