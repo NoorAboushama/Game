@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple Forest Game with Obstacles</title>
+    <title>Enhanced Forest Game with Improved Visuals</title>
     <style>
         body {
             margin: 0;
@@ -22,21 +22,117 @@
             color: white;
             font-family: Arial, sans-serif;
         }
+        #highScore {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 24px;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        #lives {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 24px;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        #timer {
+            position: absolute;
+            top: 60px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 24px;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+        #menu {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            font-family: Arial, sans-serif;
+            color: white;
+        }
+        #menu button {
+            font-size: 20px;
+            padding: 10px 20px;
+            margin: 10px;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
-    <div id="score">Score: 0</div>
-    <canvas id="gameCanvas"></canvas>
+    <div id="menu">
+        <h1>Forest Adventure Game</h1>
+        <button onclick="startGame()">Start Game</button>
+    </div>
+    <div id="score" style="display: none;">Score: 0</div>
+    <div id="highScore" style="display: none;">High Score: 0</div>
+    <div id="lives" style="display: none;">Lives: 3</div>
+    <div id="timer" style="display: none;">Time Left: 60s</div>
+    <canvas id="gameCanvas" style="display: none;"></canvas>
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const scoreElement = document.getElementById('score');
+        const highScoreElement = document.getElementById('highScore');
+        const livesElement = document.getElementById('lives');
+        const timerElement = document.getElementById('timer');
+        const menu = document.getElementById('menu');
+
+        // Load sound effects
+        const jumpSound = new Audio('jump.mp3');
+        const collectibleSound = new Audio('collect.mp3');
+        const gameOverSound = new Audio('gameover.mp3');
+        const powerUpSound = new Audio('powerup.mp3');
+        const backgroundMusic = new Audio('background.mp3');
+        backgroundMusic.loop = true;
+        backgroundMusic.volume = 0.5;
+
+        let gamePaused = false;
+        let score = 0;
+        let lives = 3;
+        let timeLeft = 60; // Time limit for each challenge (in seconds)
+        let highScore = localStorage.getItem('highScore') ? parseInt(localStorage.getItem('highScore')) : 0;
+        highScoreElement.textContent = `High Score: ${highScore}`;
 
         // Set canvas dimensions to match the window size
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
-        // Player object representing the blue square
+        // Load images for obstacles, collectibles, power-ups, and player sprite sheet
+        const obstacleImage = new Image();
+        obstacleImage.src = 'obstacle.png';
+        const collectibleImage = new Image();
+        collectibleImage.src = 'collectible.png';
+        const powerUpSpeedImage = new Image();
+        powerUpSpeedImage.src = 'powerup_speed.png';
+        const powerUpShieldImage = new Image();
+        powerUpShieldImage.src = 'powerup_shield.png';
+        const playerSprite = new Image();
+        playerSprite.src = 'player_sprite.png';
+
+        // Background layers for parallax scrolling
+        const backgroundLayers = [
+            {
+                image: new Image(),
+                x: 0,
+                speed: 0.5
+            },
+            {
+                image: new Image(),
+                x: 0,
+                speed: 1
+            }
+        ];
+        backgroundLayers[0].image.src = 'forest.JPG';
+        backgroundLayers[1].image.src = 'forest_layer2.JPG';
+
+        // Player object representing the animated character
         let player = {
             x: 100, // Initial x position of the player
             y: canvas.height - 150, // Initial y position of the player (bottom of the screen)
@@ -44,151 +140,83 @@
             height: 50, // Height of the player
             speed: 5, // Speed at which the player moves
             dx: 0, // Change in x position (movement direction)
-            dy: 0 // Change in y position
+            dy: 0, // Change in y position
+            gravity: 1, // Gravity affecting the player
+            jumpStrength: -15, // Strength of the jump
+            onGround: true, // Check if the player is on the ground
+            shielded: false, // Indicates if the player is shielded
+            frame: 0, // Animation frame
+            frameCount: 0, // Frame count for animation speed control
+            spriteWidth: 48, // Width of a single frame in the sprite sheet
+            spriteHeight: 48 // Height of a single frame in the sprite sheet
         };
 
-        let score = 0;
-
-        // Array to hold obstacles
+        let collectibles = [];
         let obstacles = [];
+        let powerUps = [];
 
         // Function to create an obstacle
         function createObstacle() {
             const size = Math.random() * 50 + 20; // Random size between 20 and 70
             const obstacle = {
                 x: canvas.width, // Start at the right edge of the canvas
-                y: canvas.height - size - 100, // Position near the bottom
+                y: Math.random() * (canvas.height - size - 100), // Random vertical position
                 width: size,
                 height: size,
-                speed: 3 // Speed at which the obstacle moves to the left
+                speed: Math.random() * 2 + 2, // Random speed between 2 and 4
+                moving: Math.random() < 0.5 // Randomly decide if the obstacle should move vertically
             };
             obstacles.push(obstacle);
         }
 
+        // Function to create a collectible
+        function createCollectible() {
+            const size = 20;
+            const collectible = {
+                x: Math.random() * (canvas.width - size), // Random horizontal position
+                y: Math.random() * (canvas.height - size - 100), // Random vertical position
+                width: size,
+                height: size
+            };
+            collectibles.push(collectible);
+        }
+
+        // Function to create a power-up
+        function createPowerUp() {
+            const size = 30;
+            const type = Math.random() < 0.5 ? 'speed' : 'shield'; // Randomly choose between speed boost or shield
+            const powerUp = {
+                x: Math.random() * (canvas.width - size),
+                y: Math.random() * (canvas.height - size - 100),
+                width: size,
+                height: size,
+                type: type
+            };
+            powerUps.push(powerUp);
+        }
+
         // Function to draw the player on the canvas
         function drawPlayer() {
-            ctx.fillStyle = 'blue'; // Set player color to blue
-            ctx.fillRect(player.x, player.y, player.width, player.height); // Draw the player as a rectangle
-        }
+            // Draw player using sprite sheet
+            ctx.drawImage(
+                playerSprite,
+                player.frame * player.spriteWidth, // Source x position
+                0, // Source y position
+                player.spriteWidth, // Source width
+                player.spriteHeight, // Source height
+                player.x, // Destination x position
+                player.y, // Destination y position
+                player.width, // Destination width
+                player.height // Destination height
+            );
 
-        // Function to draw obstacles
-        function drawObstacles() {
-            ctx.fillStyle = 'red';
-            obstacles.forEach(obstacle => {
-                ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
-            });
-        }
-
-        // Function to clear the canvas before each frame
-        function clear() {
-            ctx.clearRect(0, 0, canvas.width, canvas.height);
-        }
-
-        // Update function to continuously redraw the player, obstacles, and handle movement
-        function update() {
-            clear(); // Clear the previous frame
-            drawPlayer(); // Draw the player in the new position
-            drawObstacles(); // Draw all obstacles
-
-            // Update player's position based on movement direction
-            player.x += player.dx;
-            player.y += player.dy;
-
-            // Prevent player from moving out of bounds
-            if (player.x < 0) player.x = 0;
-            if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
-            if (player.y < 0) player.y = 0;
-            if (player.y + player.height > canvas.height) player.y = canvas.height - player.height;
-
-            // Update score as player moves to the right
-            if (player.dx > 0) {
-                score++;
-            }
-
-            // Display the updated score
-            scoreElement.textContent = `Score: ${score}`;
-
-            // Update obstacle positions
-            obstacles.forEach((obstacle, index) => {
-                obstacle.x -= obstacle.speed;
-
-                // Remove obstacle if it goes off screen
-                if (obstacle.x + obstacle.width < 0) {
-                    obstacles.splice(index, 1);
-                }
-
-                // Check for collision with player
-                if (
-                    player.x < obstacle.x + obstacle.width &&
-                    player.x + player.width > obstacle.x &&
-                    player.y < obstacle.y + obstacle.height &&
-                    player.y + player.height > obstacle.y
-                ) {
-                    // End the game if there is a collision
-                    if (confirm('Game Over! Your score: ' + score + '\nDo you want to start over?')) {
-                        resetGame();
-                    }
-                }
-            });
-
-            // Request the next animation frame to keep updating the game
-            requestAnimationFrame(update);
-        }
-
-        // Function to move the player
-        function movePlayer(e) {
-            switch (e.key) {
-                case 'ArrowRight':
-                    player.dx = player.speed;
-                    break;
-                case 'ArrowLeft':
-                    player.dx = -player.speed;
-                    break;
-                case 'ArrowUp':
-                    player.dy = -player.speed;
-                    break;
-                case 'ArrowDown':
-                    player.dy = player.speed;
-                    break;
+            // Update animation frame
+            player.frameCount++;
+            if (player.frameCount % 10 === 0) {
+                player.frame = (player.frame + 1) % 4; // Loop through 4 frames
             }
         }
 
-        // Function to stop the player's movement
-        function stopPlayer(e) {
-            switch (e.key) {
-                case 'ArrowRight':
-                case 'ArrowLeft':
-                    player.dx = 0;
-                    break;
-                case 'ArrowUp':
-                case 'ArrowDown':
-                    player.dy = 0;
-                    break;
-            }
-        }
-
-        // Event listener for keydown to handle player movement
-        document.addEventListener('keydown', movePlayer);
-
-        // Event listener for keyup to stop player movement
-        document.addEventListener('keyup', stopPlayer);
-
-        // Create obstacles at intervals
-        setInterval(createObstacle, 2000); // Create a new obstacle every 2 seconds
-
-        // Function to reset the game
-        function resetGame() {
-            player.x = 100;
-            player.y = canvas.height - 150;
-            player.dx = 0;
-            player.dy = 0;
-            score = 0;
-            obstacles = [];
-            update();
-        }
-
-        // Start the game update loop
-        update();
-    </script>
-</body>
-</html>
+        // Function to draw the background layers for parallax scrolling
+        function drawBackground() {
+            backgroundLayers.for
