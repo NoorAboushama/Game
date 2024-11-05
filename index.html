@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Improved Forest Game</title>
+    <title>Improved Forest Game with Power-Ups and Moving Background</title>
     <style>
         body {
             margin: 0;
@@ -11,8 +11,6 @@
         }
         canvas {
             display: block;
-            background: url('forest.JPG') no-repeat center center;
-            background-size: cover;
         }
         #score {
             position: absolute;
@@ -46,6 +44,12 @@
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
+        // Background settings
+        const backgroundImage = new Image();
+        backgroundImage.src = 'forest.JPG';
+        let backgroundX = 0;
+        const backgroundSpeed = 2;
+
         // Player object representing the blue square
         let player = {
             x: 100, // Initial x position of the player
@@ -57,12 +61,14 @@
             dy: 0, // Change in y position
             gravity: 1, // Gravity affecting the player
             jumpStrength: -15, // Strength of the jump
-            onGround: true // Check if the player is on the ground
+            onGround: true, // Check if the player is on the ground
+            shielded: false // Check if the player has a shield power-up
         };
 
         let score = 0;
         let lives = 3;
         let obstacles = [];
+        let powerUps = [];
 
         // Function to create an obstacle
         function createObstacle() {
@@ -77,9 +83,34 @@
             obstacles.push(obstacle);
         }
 
+        // Function to create a power-up
+        function createPowerUp() {
+            const size = 30;
+            const type = Math.random() < 0.5 ? 'shield' : 'speed'; // Randomly choose between shield or speed boost
+            const powerUp = {
+                x: Math.random() * (canvas.width - size), // Random horizontal position
+                y: Math.random() * (canvas.height - size - 100), // Random vertical position
+                width: size,
+                height: size,
+                type: type
+            };
+            powerUps.push(powerUp);
+        }
+
+        // Function to draw the background
+        function drawBackground() {
+            ctx.drawImage(backgroundImage, backgroundX, 0, canvas.width, canvas.height);
+            ctx.drawImage(backgroundImage, backgroundX + canvas.width, 0, canvas.width, canvas.height);
+
+            backgroundX -= backgroundSpeed;
+            if (backgroundX <= -canvas.width) {
+                backgroundX = 0;
+            }
+        }
+
         // Function to draw the player on the canvas
         function drawPlayer() {
-            ctx.fillStyle = 'blue'; // Set player color to blue
+            ctx.fillStyle = player.shielded ? 'lightblue' : 'blue'; // Set player color based on shield status
             ctx.fillRect(player.x, player.y, player.width, player.height); // Draw the player as a rectangle
         }
 
@@ -91,16 +122,26 @@
             });
         }
 
+        // Function to draw power-ups
+        function drawPowerUps() {
+            powerUps.forEach(powerUp => {
+                ctx.fillStyle = powerUp.type === 'shield' ? 'green' : 'yellow';
+                ctx.fillRect(powerUp.x, powerUp.y, powerUp.width, powerUp.height);
+            });
+        }
+
         // Function to clear the canvas before each frame
         function clear() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
         }
 
-        // Update function to continuously redraw the player, obstacles, and handle movement
+        // Update function to continuously redraw the player, obstacles, power-ups, and handle movement
         function update() {
             clear(); // Clear the previous frame
+            drawBackground(); // Draw the scrolling background
             drawPlayer(); // Draw the player in the new position
             drawObstacles(); // Draw all obstacles
+            drawPowerUps(); // Draw all power-ups
 
             // Update player's position based on movement direction and gravity
             player.x += player.dx;
@@ -144,17 +185,39 @@
                     player.y < obstacle.y + obstacle.height &&
                     player.y + player.height > obstacle.y
                 ) {
-                    lives--;
-                    livesElement.textContent = `Lives: ${lives}`;
-                    if (lives <= 0) {
-                        // End the game if there are no lives left
-                        if (confirm('Game Over! Your score: ' + score + '\nDo you want to start over?')) {
-                            resetGame();
-                        }
+                    if (player.shielded) {
+                        player.shielded = false; // Lose the shield if colliding with an obstacle
                     } else {
-                        // Remove the obstacle that caused the collision
-                        obstacles.splice(index, 1);
+                        lives--;
+                        livesElement.textContent = `Lives: ${lives}`;
+                        if (lives <= 0) {
+                            // End the game if there are no lives left
+                            if (confirm('Game Over! Your score: ' + score + '\nDo you want to start over?')) {
+                                resetGame();
+                            }
+                        } else {
+                            // Remove the obstacle that caused the collision
+                            obstacles.splice(index, 1);
+                        }
                     }
+                }
+            });
+
+            // Update power-up positions and check for collection
+            powerUps.forEach((powerUp, index) => {
+                if (
+                    player.x < powerUp.x + powerUp.width &&
+                    player.x + player.width > powerUp.x &&
+                    player.y < powerUp.y + powerUp.height &&
+                    player.y + player.height > powerUp.y
+                ) {
+                    if (powerUp.type === 'shield') {
+                        player.shielded = true; // Activate shield power-up
+                    } else if (powerUp.type === 'speed') {
+                        player.speed *= 2; // Double the player's speed temporarily
+                        setTimeout(() => player.speed /= 2, 5000); // Speed boost lasts for 5 seconds
+                    }
+                    powerUps.splice(index, 1); // Remove the collected power-up
                 }
             });
 
@@ -206,6 +269,9 @@
         // Create obstacles at intervals
         setInterval(createObstacle, 2000); // Create a new obstacle every 2 seconds
 
+        // Create power-ups at intervals
+        setInterval(createPowerUp, 10000); // Create a new power-up every 10 seconds
+
         // Function to reset the game
         function resetGame() {
             player.x = 100;
@@ -213,9 +279,12 @@
             player.dx = 0;
             player.dy = 0;
             player.onGround = true;
+            player.shielded = false;
             score = 0;
             lives = 3;
             obstacles = [];
+            powerUps = [];
+            backgroundX = 0;
             update();
         }
 
@@ -224,4 +293,5 @@
     </script>
 </body>
 </html>
+
 
