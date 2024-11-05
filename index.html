@@ -1,118 +1,182 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Find the Cats Game</title>
-  <style>
-    /* Center the canvas */
-    body, html {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      margin: 0;
-      overflow: hidden;
-      background-color: #222;
-    }
-  </style>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/p5.js/1.4.0/p5.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Forest Game with Obstacles</title>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+        }
+        canvas {
+            display: block;
+            background: url('forest.JPG') no-repeat center center;
+            background-size: cover;
+        }
+        #score {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            font-size: 24px;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
+    </style>
 </head>
 <body>
-  <script>
-    let bgImage;
-    let catsFound = 0;
-    const totalCats = 7; // Total number of cats in the image
-    let zones = [];
-    let gameEnded = false;
-    
-    function preload() {
-      // Load the background image
-      bgImage = loadImage('Cat.JPG', img => {
-        console.log("Image loaded successfully.");
-      }, err => {
-        console.error("Failed to load image. Check the file path.");
-      });
-    }
+    <div id="score">Score: 0</div>
+    <canvas id="gameCanvas"></canvas>
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score');
 
-    function setup() {
-      createCanvas(windowWidth, windowHeight);
-      textAlign(CENTER, CENTER);
-      textSize(24);
-      
-      // Define interaction zones for each cat (based on approximate positions)
-      // Adjust these coordinates if necessary for accuracy
-      zones = [
-        { name: 'Cat1', x: 0.2 * width, y: 0.6 * height, w: 0.1 * width, h: 0.1 * height, found: false },
-        { name: 'Cat2', x: 0.3 * width, y: 0.7 * height, w: 0.1 * width, h: 0.1 * height, found: false },
-        { name: 'Cat3', x: 0.5 * width, y: 0.6 * height, w: 0.1 * width, h: 0.1 * height, found: false },
-        { name: 'Cat4', x: 0.6 * width, y: 0.2 * height, w: 0.1 * width, h: 0.1 * height, found: false },
-        { name: 'Cat5', x: 0.75 * width, y: 0.4 * height, w: 0.1 * width, h: 0.1 * height, found: false },
-        { name: 'Cat6', x: 0.8 * width, y: 0.7 * height, w: 0.1 * width, h: 0.1 * height, found: false },
-        { name: 'Cat7', x: 0.9 * width, y: 0.8 * height, w: 0.1 * width, h: 0.1 * height, found: false }
-      ];
-    }
+        // Set canvas dimensions to match the window size
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
 
-    function draw() {
-      // Draw the background image scaled to the window size
-      if (bgImage) {
-        image(bgImage, 0, 0, width, height);
-      } else {
-        console.error("Background image not loaded.");
-      }
+        // Player object representing the blue square
+        let player = {
+            x: 100, // Initial x position of the player
+            y: canvas.height - 150, // Initial y position of the player (bottom of the screen)
+            width: 50, // Width of the player
+            height: 50, // Height of the player
+            speed: 5, // Speed at which the player moves
+            dx: 0, // Change in x position (movement direction)
+            dy: 0 // Change in y position
+        };
 
-      // Display the score at the top
-      fill(255);
-      textSize(32);
-      text(`Cats Found: ${catsFound} / ${totalCats}`, width / 2, 40);
+        let score = 0;
 
-      // If the game is over, display the end screen
-      if (gameEnded) {
-        displayEndScreen();
-        noLoop(); // Stop the draw loop after the game ends
-      }
-    }
+        // Array to hold obstacles
+        let obstacles = [];
 
-    function mousePressed() {
-      if (gameEnded) return; // If game is over, ignore further clicks
-
-      // Check if mouse is in any cat's zone
-      let foundAny = false;
-      zones.forEach(zone => {
-        if (!zone.found && mouseX > zone.x && mouseX < zone.x + zone.w &&
-            mouseY > zone.y && mouseY < zone.y + zone.h) {
-          zone.found = true;
-          catsFound += 1;
-          foundAny = true;
-          console.log(`You found ${zone.name}!`);
-          
-          // Check if all cats have been found
-          if (catsFound === totalCats) {
-            gameEnded = true;
-          }
+        // Function to create an obstacle
+        function createObstacle() {
+            const size = Math.random() * 50 + 20; // Random size between 20 and 70
+            const obstacle = {
+                x: canvas.width, // Start at the right edge of the canvas
+                y: canvas.height - size - 100, // Position near the bottom
+                width: size,
+                height: size,
+                speed: 3 // Speed at which the obstacle moves to the left
+            };
+            obstacles.push(obstacle);
         }
-      });
 
-      if (foundAny) {
-        redraw(); // Redraw to update the score immediately
-      }
-    }
+        // Function to draw the player on the canvas
+        function drawPlayer() {
+            ctx.fillStyle = 'blue'; // Set player color to blue
+            ctx.fillRect(player.x, player.y, player.width, player.height); // Draw the player as a rectangle
+        }
 
-    function displayEndScreen() {
-      // Display "Game Over" message when all cats are found
-      fill(0, 150);
-      rect(0, 0, width, height); // Semi-transparent overlay
-      fill(255);
-      textSize(48);
-      text('Congratulations!', width / 2, height / 2 - 20);
-      textSize(32);
-      text('You found all the cats!', width / 2, height / 2 + 40);
-    }
+        // Function to draw obstacles
+        function drawObstacles() {
+            ctx.fillStyle = 'red';
+            obstacles.forEach(obstacle => {
+                ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+            });
+        }
 
-    function windowResized() {
-      resizeCanvas(windowWidth, windowHeight); // Resize canvas if the window is resized
-      setup(); // Recalculate positions if window size changes
-    }
-  </script>
+        // Function to clear the canvas before each frame
+        function clear() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+
+        // Update function to continuously redraw the player, obstacles, and handle movement
+        function update() {
+            clear(); // Clear the previous frame
+            drawPlayer(); // Draw the player in the new position
+            drawObstacles(); // Draw all obstacles
+
+            // Update player's position based on movement direction
+            player.x += player.dx;
+            player.y += player.dy;
+
+            // Prevent player from moving out of bounds
+            if (player.x < 0) player.x = 0;
+            if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
+            if (player.y < 0) player.y = 0;
+            if (player.y + player.height > canvas.height) player.y = canvas.height - player.height;
+
+            // Update score as player moves to the right
+            if (player.dx > 0) {
+                score++;
+            }
+
+            // Display the updated score
+            scoreElement.textContent = `Score: ${score}`;
+
+            // Update obstacle positions
+            obstacles.forEach((obstacle, index) => {
+                obstacle.x -= obstacle.speed;
+
+                // Remove obstacle if it goes off screen
+                if (obstacle.x + obstacle.width < 0) {
+                    obstacles.splice(index, 1);
+                }
+
+                // Check for collision with player
+                if (
+                    player.x < obstacle.x + obstacle.width &&
+                    player.x + player.width > obstacle.x &&
+                    player.y < obstacle.y + obstacle.height &&
+                    player.y + player.height > obstacle.y
+                ) {
+                    // End the game if there is a collision
+                    alert('Game Over! Your score: ' + score);
+                    document.location.reload();
+                }
+            });
+
+            // Request the next animation frame to keep updating the game
+            requestAnimationFrame(update);
+        }
+
+        // Function to move the player
+        function movePlayer(e) {
+            switch (e.key) {
+                case 'ArrowRight':
+                    player.dx = player.speed;
+                    break;
+                case 'ArrowLeft':
+                    player.dx = -player.speed;
+                    break;
+                case 'ArrowUp':
+                    player.dy = -player.speed;
+                    break;
+                case 'ArrowDown':
+                    player.dy = player.speed;
+                    break;
+            }
+        }
+
+        // Function to stop the player's movement
+        function stopPlayer(e) {
+            switch (e.key) {
+                case 'ArrowRight':
+                case 'ArrowLeft':
+                    player.dx = 0;
+                    break;
+                case 'ArrowUp':
+                case 'ArrowDown':
+                    player.dy = 0;
+                    break;
+            }
+        }
+
+        // Event listener for keydown to handle player movement
+        document.addEventListener('keydown', movePlayer);
+
+        // Event listener for keyup to stop player movement
+        document.addEventListener('keyup', stopPlayer);
+
+        // Create obstacles at intervals
+        setInterval(createObstacle, 2000); // Create a new obstacle every 2 seconds
+
+        // Start the game update loop
+        update();
+    </script>
 </body>
 </html>
