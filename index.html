@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple Forest Game with Obstacles and Collectibles</title>
+    <title>Simple Forest Game</title>
     <style>
         body {
             margin: 0;
@@ -44,14 +44,10 @@
             height: 50, // Height of the player
             speed: 5, // Speed at which the player moves
             dx: 0, // Change in x position (movement direction)
-            dy: 0, // Change in y position
-            gravity: 1, // Gravity affecting the player
-            jumpStrength: -15, // Strength of the jump
-            onGround: true // Check if the player is on the ground
+            dy: 0 // Change in y position
         };
 
         let score = 0;
-        let collectibles = [];
         let obstacles = [];
 
         // Function to create an obstacle
@@ -65,18 +61,6 @@
                 speed: 3 // Speed at which the obstacle moves to the left
             };
             obstacles.push(obstacle);
-        }
-
-        // Function to create a collectible
-        function createCollectible() {
-            const size = 20;
-            const collectible = {
-                x: Math.random() * (canvas.width - size), // Random horizontal position
-                y: Math.random() * (canvas.height - size - 100), // Random vertical position
-                width: size,
-                height: size
-            };
-            collectibles.push(collectible);
         }
 
         // Function to draw the player on the canvas
@@ -93,43 +77,26 @@
             });
         }
 
-        // Function to draw collectibles
-        function drawCollectibles() {
-            ctx.fillStyle = 'yellow';
-            collectibles.forEach(collectible => {
-                ctx.fillRect(collectible.x, collectible.y, collectible.width, collectible.height);
-            });
-        }
-
         // Function to clear the canvas before each frame
         function clear() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
         }
 
-        // Update function to continuously redraw the player, obstacles, collectibles, and handle movement
+        // Update function to continuously redraw the player, obstacles, and handle movement
         function update() {
             clear(); // Clear the previous frame
             drawPlayer(); // Draw the player in the new position
             drawObstacles(); // Draw all obstacles
-            drawCollectibles(); // Draw all collectibles
 
-            // Update player's position based on movement direction and gravity
+            // Update player's position based on movement direction
             player.x += player.dx;
             player.y += player.dy;
-
-            // Apply gravity if player is not on the ground
-            if (!player.onGround) {
-                player.dy += player.gravity;
-            }
 
             // Prevent player from moving out of bounds
             if (player.x < 0) player.x = 0;
             if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
-            if (player.y + player.height > canvas.height) {
-                player.y = canvas.height - player.height;
-                player.dy = 0;
-                player.onGround = true;
-            }
+            if (player.y < 0) player.y = 0;
+            if (player.y + player.height > canvas.height) player.y = canvas.height - player.height;
 
             // Update score as player moves to the right
             if (player.dx > 0) {
@@ -162,20 +129,6 @@
                 }
             });
 
-            // Check for collectible collection
-            collectibles.forEach((collectible, index) => {
-                if (
-                    player.x < collectible.x + collectible.width &&
-                    player.x + player.width > collectible.x &&
-                    player.y < collectible.y + collectible.height &&
-                    player.y + player.height > collectible.y
-                ) {
-                    // Increase score and remove collectible
-                    score += 50;
-                    collectibles.splice(index, 1);
-                }
-            });
-
             // Request the next animation frame to keep updating the game
             requestAnimationFrame(update);
         }
@@ -190,10 +143,10 @@
                     player.dx = -player.speed;
                     break;
                 case 'ArrowUp':
-                    if (player.onGround) {
-                        player.dy = player.jumpStrength;
-                        player.onGround = false;
-                    }
+                    player.dy = -player.speed;
+                    break;
+                case 'ArrowDown':
+                    player.dy = player.speed;
                     break;
             }
         }
@@ -204,6 +157,10 @@
                 case 'ArrowRight':
                 case 'ArrowLeft':
                     player.dx = 0;
+                    break;
+                case 'ArrowUp':
+                case 'ArrowDown':
+                    player.dy = 0;
                     break;
             }
         }
@@ -217,19 +174,14 @@
         // Create obstacles at intervals
         setInterval(createObstacle, 2000); // Create a new obstacle every 2 seconds
 
-        // Create collectibles at intervals
-        setInterval(createCollectible, 5000); // Create a new collectible every 5 seconds
-
         // Function to reset the game
         function resetGame() {
             player.x = 100;
             player.y = canvas.height - 150;
             player.dx = 0;
             player.dy = 0;
-            player.onGround = true;
             score = 0;
             obstacles = [];
-            collectibles = [];
             update();
         }
 
