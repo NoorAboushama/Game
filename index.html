@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Improved Forest Game with Power-Ups and Moving Background</title>
+    <title>Improved Forest Game with Power-Ups and Constantly Moving Background</title>
     <style>
         body {
             margin: 0;
@@ -48,7 +48,7 @@
         const backgroundImage = new Image();
         backgroundImage.src = 'forest.JPG';
         let backgroundX = 0;
-        let backgroundSpeed = 2;
+        const backgroundSpeed = 2;
 
         // Player settings
         const playerImage = new Image();
@@ -76,12 +76,15 @@
         function createObstacle() {
             const width = Math.random() * 50 + 20; // Random width between 20 and 70
             const height = Math.random() * 30 + 50; // Random height between 50 and 80
+            const obstacleImage = new Image();
+            obstacleImage.src = 'obstacle.png'; // Use an image for the obstacle
             const obstacle = {
                 x: canvas.width, // Start at the right edge of the canvas
                 y: canvas.height - height - 100, // Position near the bottom
                 width: width,
                 height: height,
-                speed: 3 + score / 100 // Speed increases as score increases
+                speed: 3 + score / 100, // Speed increases as score increases
+                image: obstacleImage
             };
             obstacles.push(obstacle);
         }
@@ -90,12 +93,15 @@
         function createPowerUp() {
             const size = 30;
             const type = Math.random() < 0.5 ? 'shield' : 'speed'; // Randomly choose between shield or speed boost
+            const powerUpImage = new Image();
+            powerUpImage.src = type === 'shield' ? 'shield.png' : 'speed.png'; // Use different images for different power-ups
             const powerUp = {
                 x: Math.random() * (canvas.width - size), // Random horizontal position
                 y: Math.random() * (canvas.height - size - 100), // Random vertical position
                 width: size,
                 height: size,
-                type: type
+                type: type,
+                image: powerUpImage
             };
             powerUps.push(powerUp);
         }
@@ -105,9 +111,7 @@
             ctx.drawImage(backgroundImage, backgroundX, 0, canvas.width, canvas.height);
             ctx.drawImage(backgroundImage, backgroundX + canvas.width, 0, canvas.width, canvas.height);
 
-            if (player.dx > 0) {
-                backgroundX -= backgroundSpeed;
-            }
+            backgroundX -= backgroundSpeed;
             if (backgroundX <= -canvas.width) {
                 backgroundX = 0;
             }
@@ -120,34 +124,15 @@
 
         // Function to draw obstacles
         function drawObstacles() {
-            ctx.fillStyle = 'red';
             obstacles.forEach(obstacle => {
-                ctx.beginPath();
-                ctx.moveTo(obstacle.x, obstacle.y);
-                ctx.lineTo(obstacle.x + obstacle.width / 2, obstacle.y - obstacle.height / 2);
-                ctx.lineTo(obstacle.x + obstacle.width, obstacle.y);
-                ctx.closePath();
-                ctx.fill();
+                ctx.drawImage(obstacle.image, obstacle.x, obstacle.y, obstacle.width, obstacle.height); // Draw obstacle as an image
             });
         }
 
         // Function to draw power-ups
         function drawPowerUps() {
             powerUps.forEach(powerUp => {
-                if (powerUp.type === 'shield') {
-                    ctx.fillStyle = 'green';
-                    ctx.beginPath();
-                    ctx.arc(powerUp.x + powerUp.width / 2, powerUp.y + powerUp.height / 2, powerUp.width / 2, 0, Math.PI * 2);
-                    ctx.fill();
-                } else if (powerUp.type === 'speed') {
-                    ctx.fillStyle = 'yellow';
-                    ctx.beginPath();
-                    ctx.moveTo(powerUp.x, powerUp.y + powerUp.height);
-                    ctx.lineTo(powerUp.x + powerUp.width / 2, powerUp.y);
-                    ctx.lineTo(powerUp.x + powerUp.width, powerUp.y + powerUp.height);
-                    ctx.closePath();
-                    ctx.fill();
-                }
+                ctx.drawImage(powerUp.image, powerUp.x, powerUp.y, powerUp.width, powerUp.height); // Draw power-up as an image
             });
         }
 
@@ -173,8 +158,8 @@
                 player.dy += player.gravity;
             }
 
-            // Prevent player from moving out of bounds
-            if (player.x < 0) player.x = 0;
+            // Prevent player from moving out of bounds horizontally
+            if (player.x < 100) player.x = 100; // Prevent moving back, player must keep up
             if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
             if (player.y + player.height > canvas.height) {
                 player.y = canvas.height - player.height;
@@ -183,16 +168,14 @@
             }
 
             // Update score as player moves to the right
-            if (player.dx > 0) {
-                score++;
-            }
+            score++;
 
             // Display the updated score
             scoreElement.textContent = `Score: ${score}`;
 
             // Update obstacle positions
             obstacles.forEach((obstacle, index) => {
-                obstacle.x -= obstacle.speed;
+                obstacle.x -= backgroundSpeed + obstacle.speed;
 
                 // Remove obstacle if it goes off screen
                 if (obstacle.x + obstacle.width < 0) {
@@ -238,82 +221,8 @@
                         player.speed *= 2; // Double the player's speed temporarily
                         setTimeout(() => player.speed /= 2, 5000); // Speed boost lasts for 5 seconds
                     }
-                    powerUps.splice(index, 1); // Remove the collected power-up
-                }
-            });
+                    powerUps.splice(index, 1);
 
-            // Request the next animation frame to keep updating the game
-            requestAnimationFrame(update);
-        }
-
-        // Function to move the player
-        function movePlayer(e) {
-            switch (e.key) {
-                case 'ArrowRight':
-                    player.dx = player.speed;
-                    break;
-                case 'ArrowLeft':
-                    player.dx = -player.speed;
-                    break;
-                case 'ArrowUp':
-                case ' ': // ArrowUp or Spacebar to jump
-                    if (player.onGround) {
-                        player.dy = player.jumpStrength;
-                        player.onGround = false;
-                    }
-                    break;
-                case 'ArrowDown':
-                    player.dy = player.speed;
-                    break;
-            }
-        }
-
-        // Function to stop the player's movement
-        function stopPlayer(e) {
-            switch (e.key) {
-                case 'ArrowRight':
-                case 'ArrowLeft':
-                    player.dx = 0;
-                    break;
-                case 'ArrowDown':
-                    player.dy = 0;
-                    break;
-            }
-        }
-
-        // Event listener for keydown to handle player movement
-        document.addEventListener('keydown', movePlayer);
-
-        // Event listener for keyup to stop player movement
-        document.addEventListener('keyup', stopPlayer);
-
-        // Create obstacles at intervals
-        setInterval(createObstacle, 2000); // Create a new obstacle every 2 seconds
-
-        // Create power-ups at intervals
-        setInterval(createPowerUp, 10000); // Create a new power-up every 10 seconds
-
-        // Function to reset the game
-        function resetGame() {
-            player.x = 100;
-            player.y = canvas.height - 150;
-            player.dx = 0;
-            player.dy = 0;
-            player.onGround = true;
-            player.shielded = false;
-            score = 0;
-            lives = 3;
-            obstacles = [];
-            powerUps = [];
-            backgroundX = 0;
-            update();
-        }
-
-        // Start the game update loop
-        update();
-    </script>
-</body>
-</html>
 
 
 
