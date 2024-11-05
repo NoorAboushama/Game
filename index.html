@@ -221,7 +221,26 @@
                         player.speed *= 2; // Double the player's speed temporarily
                         setTimeout(() => player.speed /= 2, 5000); // Speed boost lasts for 5 seconds
                     }
-                    powerUps.splice(index, 1);
+                    powerUps.splice(index, 1); // Remove the collected power-up
+                }
+            });
+
+            // Request the next animation frame to keep updating the game
+            requestAnimationFrame(update);
+        }
+
+        // Function to move the player
+        function movePlayer(e) {
+            switch (e.key) {
+                case 'ArrowRight':
+                    player.dx = player.speed;
+                    break;
+                case 'ArrowUp':
+                case ' ': // ArrowUp or Spacebar to jump
+                    if (player.onGround) {
+                        player.dy = player.jumpStrength;
+                        player.onGround =
+
 
 
 
