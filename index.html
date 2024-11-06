@@ -51,8 +51,6 @@
         const backgroundSpeed = 2;
 
         // Player settings
-        const playerImage = new Image();
-        playerImage.src = 'player.JPG'; // Use an image for the player
         let player = {
             x: 100, // Initial x position of the player
             y: canvas.height - 150, // Initial y position of the player (bottom of the screen)
@@ -76,16 +74,13 @@
         function createObstacle() {
             const width = Math.random() * 50 + 20; // Random width between 20 and 70
             const height = Math.random() * 30 + 50; // Random height between 50 and 80
-            const obstacleImage = new Image();
-            obstacleImage.src = 'obstacle.png'; // Use an image for the obstacle
-            obstacleImage.onerror = () => console.warn('Obstacle image failed to load');
             const obstacle = {
                 x: canvas.width, // Start at the right edge of the canvas
                 y: canvas.height - height - 100, // Position near the bottom
                 width: width,
                 height: height,
                 speed: 3 + score / 100, // Speed increases as score increases
-                image: obstacleImage
+                color: 'red' // Use red color for obstacles
             };
             obstacles.push(obstacle);
         }
@@ -94,16 +89,13 @@
         function createPowerUp() {
             const size = 30;
             const type = Math.random() < 0.5 ? 'shield' : 'speed'; // Randomly choose between shield or speed boost
-            const powerUpImage = new Image();
-            powerUpImage.src = type === 'shield' ? 'shield.png' : 'speed.png'; // Use different images for different power-ups
-            powerUpImage.onerror = () => console.warn('Power-up image failed to load');
             const powerUp = {
                 x: Math.random() * (canvas.width - size), // Random horizontal position
                 y: Math.random() * (canvas.height - size - 100), // Random vertical position
                 width: size,
                 height: size,
                 type: type,
-                image: powerUpImage
+                color: type === 'shield' ? 'green' : 'yellow' // Use green for shield and yellow for speed
             };
             powerUps.push(powerUp);
         }
@@ -123,26 +115,23 @@
 
         // Function to draw the player on the canvas
         function drawPlayer() {
-            if (playerImage.complete) {
-                ctx.drawImage(playerImage, player.x, player.y, player.width, player.height); // Draw the player as an image
-            }
+            ctx.fillStyle = 'blue';
+            ctx.fillRect(player.x, player.y, player.width, player.height); // Draw the player as a blue rectangle
         }
 
         // Function to draw obstacles
         function drawObstacles() {
             obstacles.forEach(obstacle => {
-                if (obstacle.image.complete) {
-                    ctx.drawImage(obstacle.image, obstacle.x, obstacle.y, obstacle.width, obstacle.height); // Draw obstacle as an image
-                }
+                ctx.fillStyle = obstacle.color;
+                ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height); // Draw obstacle as a red rectangle
             });
         }
 
         // Function to draw power-ups
         function drawPowerUps() {
             powerUps.forEach(powerUp => {
-                if (powerUp.image.complete) {
-                    ctx.drawImage(powerUp.image, powerUp.x, powerUp.y, powerUp.width, powerUp.height); // Draw power-up as an image
-                }
+                ctx.fillStyle = powerUp.color;
+                ctx.fillRect(powerUp.x, powerUp.y, powerUp.width, powerUp.height); // Draw power-up as a colored rectangle
             });
         }
 
@@ -246,7 +235,6 @@
                     player.dx = player.speed;
                     break;
                 case 'ArrowUp':
-                case ' ': // ArrowUp or Spacebar to jump
                     if (player.onGround) {
                         player.dy = player.jumpStrength;
                         player.onGround = false;
@@ -255,20 +243,15 @@
             }
         }
 
-        // Function to stop the player's movement
-        function stopPlayer(e) {
-            switch (e.key) {
-                case 'ArrowRight':
-                    player.dx = 0;
-                    break;
-            }
-        }
-
         // Event listener for keydown to handle player movement
         document.addEventListener('keydown', movePlayer);
 
         // Event listener for keyup to stop player movement
-        document.addEventListener('keyup', stopPlayer);
+        document.addEventListener('keyup', function stopPlayer(e) {
+            if (e.key === 'ArrowRight') {
+                player.dx = 0;
+            }
+        });
 
         // Function to reset the game
         function resetGame() {
@@ -288,22 +271,11 @@
 
         // Ensure all images are loaded before starting the game
         backgroundImage.onload = () => {
-            playerImage.onload = () => {
-                console.log('All images loaded, starting the game.');
-                createObstacle();
-                createPowerUp();
+            createObstacle();
                 setInterval(createObstacle, 2000); // Create a new obstacle every 2 seconds
                 setInterval(createPowerUp, 10000); // Create a new power-up every 10 seconds
                 update();
-            };
-        };
 
-        // Log errors if images fail to load
-        backgroundImage.onerror = () => console.error('Background image failed to load');
-        playerImage.onerror = () => console.error('Player image failed to load');
-    </script>
-</body>
-</html>
 
 
 
