@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Simple Forest Game</title>
+    <title>Improved Forest Game with Power-Ups and Constantly Moving Background</title>
     <style>
         body {
             margin: 0;
@@ -11,8 +11,6 @@
         }
         canvas {
             display: block;
-            background: url('forest.JPG') no-repeat center center;
-            background-size: cover;
         }
         #score {
             position: absolute;
@@ -22,58 +20,118 @@
             color: white;
             font-family: Arial, sans-serif;
         }
+        #lives {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 24px;
+            color: white;
+            font-family: Arial, sans-serif;
+        }
     </style>
 </head>
 <body>
     <div id="score">Score: 0</div>
+    <div id="lives">Lives: 3</div>
     <canvas id="gameCanvas"></canvas>
     <script>
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         const scoreElement = document.getElementById('score');
+        const livesElement = document.getElementById('lives');
 
         // Set canvas dimensions to match the window size
         canvas.width = window.innerWidth;
         canvas.height = window.innerHeight;
 
-        // Player object representing the blue square
+        // Background settings
+        const backgroundImage = new Image();
+        backgroundImage.src = 'forest.JPG';
+        let backgroundX = 0;
+        const backgroundSpeed = 2;
+
+        // Player settings
         let player = {
-            x: 100, // Initial x position of the player
-            y: canvas.height - 150, // Initial y position of the player (bottom of the screen)
-            width: 50, // Width of the player
-            height: 50, // Height of the player
-            speed: 5, // Speed at which the player moves
-            dx: 0, // Change in x position (movement direction)
-            dy: 0 // Change in y position
+            x: 100,
+            y: canvas.height - 150,
+            width: 50,
+            height: 75,
+            speed: 5,
+            dx: 0,
+            dy: 0,
+            gravity: 1,
+            jumpStrength: -15,
+            onGround: true,
+            shielded: false
         };
 
         let score = 0;
+        let lives = 3;
         let obstacles = [];
+        let powerUps = [];
 
         // Function to create an obstacle
         function createObstacle() {
-            const size = Math.random() * 50 + 20; // Random size between 20 and 70
+            const width = Math.random() * 50 + 20;
+            const height = Math.random() * 30 + 50;
             const obstacle = {
-                x: canvas.width, // Start at the right edge of the canvas
-                y: canvas.height - size - 100, // Position near the bottom
-                width: size,
-                height: size,
-                speed: 3 // Speed at which the obstacle moves to the left
+                x: canvas.width,
+                y: canvas.height - height - 100,
+                width: width,
+                height: height,
+                speed: 3 + score / 100,
+                color: 'red'
             };
             obstacles.push(obstacle);
         }
 
+        // Function to create a power-up
+        function createPowerUp() {
+            const size = 30;
+            const type = Math.random() < 0.5 ? 'shield' : 'speed';
+            const powerUp = {
+                x: Math.random() * (canvas.width - size),
+                y: Math.random() * (canvas.height - size - 100),
+                width: size,
+                height: size,
+                type: type,
+                color: type === 'shield' ? 'green' : 'yellow'
+            };
+            powerUps.push(powerUp);
+        }
+
+        // Function to draw the background
+        function drawBackground() {
+            if (backgroundImage.complete) {
+                ctx.drawImage(backgroundImage, backgroundX, 0, canvas.width, canvas.height);
+                ctx.drawImage(backgroundImage, backgroundX + canvas.width, 0, canvas.width, canvas.height);
+
+                backgroundX -= backgroundSpeed;
+                if (backgroundX <= -canvas.width) {
+                    backgroundX = 0;
+                }
+            }
+        }
+
         // Function to draw the player on the canvas
         function drawPlayer() {
-            ctx.fillStyle = 'blue'; // Set player color to blue
-            ctx.fillRect(player.x, player.y, player.width, player.height); // Draw the player as a rectangle
+            ctx.fillStyle = 'blue';
+            ctx.fillRect(player.x, player.y, player.width, player.height);
         }
 
         // Function to draw obstacles
         function drawObstacles() {
-            ctx.fillStyle = 'red';
             obstacles.forEach(obstacle => {
+                ctx.fillStyle = obstacle.color;
                 ctx.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+            });
+        }
+
+        // Function to draw power-ups
+        function drawPowerUps() {
+            powerUps.forEach(powerUp => {
+                ctx.fillStyle = powerUp.color;
+                ctx.fillRect(powerUp.x, powerUp.y, powerUp.width, powerUp.height);
             });
         }
 
@@ -82,33 +140,41 @@
             ctx.clearRect(0, 0, canvas.width, canvas.height);
         }
 
-        // Update function to continuously redraw the player, obstacles, and handle movement
+        // Update function to continuously redraw the player, obstacles, power-ups, and handle movement
         function update() {
-            clear(); // Clear the previous frame
-            drawPlayer(); // Draw the player in the new position
-            drawObstacles(); // Draw all obstacles
+            clear();
+            drawBackground();
+            drawPlayer();
+            drawObstacles();
+            drawPowerUps();
 
-            // Update player's position based on movement direction
+            // Update player's position based on movement direction and gravity
             player.x += player.dx;
             player.y += player.dy;
 
-            // Prevent player from moving out of bounds
-            if (player.x < 0) player.x = 0;
+            // Apply gravity if player is not on the ground
+            if (!player.onGround) {
+                player.dy += player.gravity;
+            }
+
+            // Prevent player from moving out of bounds horizontally
+            if (player.x < 100) player.x = 100;
             if (player.x + player.width > canvas.width) player.x = canvas.width - player.width;
-            if (player.y < 0) player.y = 0;
-            if (player.y + player.height > canvas.height) player.y = canvas.height - player.height;
+            if (player.y + player.height > canvas.height) {
+                player.y = canvas.height - player.height;
+                player.dy = 0;
+                player.onGround = true;
+            }
 
             // Update score as player moves to the right
-            if (player.dx > 0) {
-                score++;
-            }
+            score++;
 
             // Display the updated score
             scoreElement.textContent = `Score: ${score}`;
 
             // Update obstacle positions
             obstacles.forEach((obstacle, index) => {
-                obstacle.x -= obstacle.speed;
+                obstacle.x -= backgroundSpeed + obstacle.speed;
 
                 // Remove obstacle if it goes off screen
                 if (obstacle.x + obstacle.width < 0) {
@@ -122,14 +188,43 @@
                     player.y < obstacle.y + obstacle.height &&
                     player.y + player.height > obstacle.y
                 ) {
-                    // End the game if there is a collision
-                    if (confirm('Game Over! Your score: ' + score + '\nDo you want to start over?')) {
-                        resetGame();
+                    if (player.shielded) {
+                        player.shielded = false;
+                    } else {
+                        lives--;
+                        livesElement.textContent = `Lives: ${lives}`;
+                        if (lives <= 0) {
+                            if (confirm('Game Over! Your score: ' + score + '\nDo you want to start over?')) {
+                                resetGame();
+                            }
+                        } else {
+                            obstacles.splice(index, 1);
+                        }
                     }
                 }
             });
 
-            // Request the next animation frame to keep updating the game
+            // Update power-up positions and check for collection
+            powerUps.forEach((powerUp, index) => {
+                if (
+                    player.x < powerUp.x + powerUp.width &&
+                    player.x + player.width > powerUp.x &&
+                    player.y < powerUp.y + powerUp.height &&
+                    player.y + player.height > powerUp.y
+                ) {
+                    if (powerUp.type === 'shield') {
+                        player.shielded = true;
+                    } else if (powerUp.type === 'speed') {
+                        if (player.speedTimeout) {
+                            clearTimeout(player.speedTimeout);
+                        }
+                        player.speed *= 2;
+                        player.speedTimeout = setTimeout(() => player.speed /= 2, 5000);
+                    }
+                    powerUps.splice(index, 1);
+                }
+            });
+
             requestAnimationFrame(update);
         }
 
@@ -139,28 +234,11 @@
                 case 'ArrowRight':
                     player.dx = player.speed;
                     break;
-                case 'ArrowLeft':
-                    player.dx = -player.speed;
-                    break;
                 case 'ArrowUp':
-                    player.dy = -player.speed;
-                    break;
-                case 'ArrowDown':
-                    player.dy = player.speed;
-                    break;
-            }
-        }
-
-        // Function to stop the player's movement
-        function stopPlayer(e) {
-            switch (e.key) {
-                case 'ArrowRight':
-                case 'ArrowLeft':
-                    player.dx = 0;
-                    break;
-                case 'ArrowUp':
-                case 'ArrowDown':
-                    player.dy = 0;
+                    if (player.onGround) {
+                        player.dy = player.jumpStrength;
+                        player.onGround = false;
+                    }
                     break;
             }
         }
@@ -169,10 +247,11 @@
         document.addEventListener('keydown', movePlayer);
 
         // Event listener for keyup to stop player movement
-        document.addEventListener('keyup', stopPlayer);
-
-        // Create obstacles at intervals
-        setInterval(createObstacle, 2000); // Create a new obstacle every 2 seconds
+        document.addEventListener('keyup', function stopPlayer(e) {
+            if (e.key === 'ArrowRight') {
+                player.dx = 0;
+            }
+        });
 
         // Function to reset the game
         function resetGame() {
@@ -180,16 +259,27 @@
             player.y = canvas.height - 150;
             player.dx = 0;
             player.dy = 0;
+            player.onGround = true;
+            player.shielded = false;
             score = 0;
+            lives = 3;
             obstacles = [];
+            powerUps = [];
+            backgroundX = 0;
             update();
         }
 
-        // Start the game update loop
-        update();
+        // Ensure all images are loaded before starting the game
+        backgroundImage.onload = () => {
+            createObstacle();
+            setInterval(createObstacle, 2000);
+            setInterval(createPowerUp, 10000);
+            update();
+        };
     </script>
 </body>
 </html>
+
 
 
 
